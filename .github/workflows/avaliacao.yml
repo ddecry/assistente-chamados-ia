@@ -7,11 +7,14 @@ on:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   avaliar:
     runs-on: ubuntu-latest
+    env:
+      LLM_BASE_URL: https://api.groq.com/openai/v1
+      LLM_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      LLM_MODEL: llama-3.3-70b-versatile
     steps:
       - uses: actions/checkout@v4
 
@@ -25,18 +28,20 @@ jobs:
       - name: Testes
         run: pytest -q
 
-      - name: Avaliação text-to-SQL (GitHub Models)
-        env:
-          LLM_BASE_URL: https://models.github.ai/inference
-          LLM_API_KEY: ${{ secrets.GITHUB_TOKEN }}
-          LLM_MODEL: openai/gpt-4o-mini
+      - name: Avaliação text-to-SQL (Groq)
+        if: ${{ env.LLM_API_KEY != '' }}
         run: |
           python -m eval.avaliar | tee saida.txt
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat saida.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Aviso sem chave
+        if: ${{ env.LLM_API_KEY == '' }}
+        run: echo "Cadastre o secret GROQ_API_KEY no repositório para rodar a avaliação." >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@v4
+        if: ${{ env.LLM_API_KEY != '' }}
         with:
           name: resultado-avaliacao
           path: eval/resultado.json
