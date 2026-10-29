@@ -1,0 +1,42 @@
+name: Testes e avaliação
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  models: read
+
+jobs:
+  avaliar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Testes
+        run: pytest -q
+
+      - name: Avaliação text-to-SQL (GitHub Models)
+        env:
+          LLM_BASE_URL: https://models.github.ai/inference
+          LLM_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+          LLM_MODEL: openai/gpt-4o-mini
+        run: |
+          python -m eval.avaliar | tee saida.txt
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat saida.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resultado-avaliacao
+          path: eval/resultado.json
