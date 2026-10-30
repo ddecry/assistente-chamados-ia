@@ -1,5 +1,7 @@
 # Assistente de Chamados Públicos com LLM
 
+[![Testes e avaliação](https://github.com/ddecry/assistente-chamados-ia/actions/workflows/avaliacao.yml/badge.svg)](https://github.com/ddecry/assistente-chamados-ia/actions/workflows/avaliacao.yml)
+
 Assistente que responde perguntas em português sobre chamados de serviços públicos. O LLM transforma a pergunta em SQL, o código valida e executa a consulta em modo somente leitura, e o LLM explica **apenas o resultado retornado**. Cada resposta mostra o SQL e a tabela usados, para que possa ser conferida.
 
 A base vem do meu projeto [public-services-etl](https://github.com/ddecry/public-services-etl): 1.560 chamados de 6 cidades, carregados em SQLite.
@@ -32,11 +34,15 @@ O modelo é intercambiável. Qualquer API compatível com OpenAI funciona: **Oll
 python -m eval.avaliar
 ```
 
-| Modelo | Acurácia de execução |
-|--------|---------------------|
-| _preencher após rodar_ | _x/15_ |
+| Modelo | Provedor | Acurácia de execução |
+|--------|----------|---------------------|
+| `openai/gpt-oss-120b` | Groq | **15/15 (100%)** |
 
-Os testes automatizados (`pytest`) usam um modelo simulado e cobrem a validação de SQL, a conexão somente leitura, a autocorreção, o fallback e o comparador da avaliação.
+A avaliação roda automaticamente no GitHub Actions a cada commit (workflow `avaliacao.yml`), usando a chave guardada no secret `GROQ_API_KEY`. O script `scripts/escolher_modelo.py` consulta os modelos disponíveis para a chave e escolhe o primeiro da lista de preferência.
+
+O conjunto ainda é pequeno (15 perguntas, uma tabela): o próximo passo é ampliá-lo com perguntas mais ambíguas e com junções.
+
+Os 16 testes automatizados (`pytest`) usam um modelo simulado e cobrem a validação de SQL, a conexão somente leitura, a autocorreção, o fallback e o comparador da avaliação.
 
 ## Executar
 
@@ -54,7 +60,7 @@ python perguntar.py "Quantos chamados estão abertos por cidade?"   # terminal
 pytest                          # testes
 ```
 
-Para usar o Groq (gratuito), troque as três variáveis no `.env` conforme o exemplo comentado.
+Para usar o Groq (gratuito), crie uma chave em console.groq.com e troque as três variáveis no `.env` conforme o exemplo comentado.
 
 ## Publicar no Hugging Face Spaces
 
@@ -69,13 +75,15 @@ assistente/
   agente.py      # fluxo: gerar SQL, validar, executar, autocorrigir, explicar
   seguranca.py   # validação do SQL gerado
   db.py          # conexão somente leitura + descrição do esquema
-  llm.py         # cliente compatível com OpenAI (Ollama, Groq, OpenAI)
+  llm.py         # cliente HTTP compatível com OpenAI (Ollama, Groq, OpenAI), com retentativas
 app.py           # interface Streamlit
 perguntar.py     # uso pelo terminal
 eval/            # perguntas de referência e script de acurácia
 tests/           # testes com modelo simulado
+scripts/         # escolha automática do modelo disponível
+.github/         # CI: testes + avaliação a cada commit
 ```
 
 ## Tecnologias
 
-Python, LLM (text-to-SQL), engenharia de prompt, Ollama, API OpenAI-compatível, SQLite, Streamlit, pytest.
+Python, LLM (text-to-SQL), engenharia de prompt, avaliação de LLM, Groq, Ollama, API OpenAI-compatível, SQLite, Streamlit, pytest, GitHub Actions.
