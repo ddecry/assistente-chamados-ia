@@ -56,6 +56,9 @@ class ClienteOpenAICompativel:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                # Alguns provedores (ex.: Groq, via Cloudflare) bloqueiam o
+                # User-Agent padrão "Python-urllib".
+                "User-Agent": "assistente-chamados-ia/1.0",
             },
             method="POST",
         )
